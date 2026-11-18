@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Daily Pour · Beverage tracker</title>
+<style>
+:root{font-family:Arial,sans-serif;color:#203d32;background:#f4f5ef;font-size:15px}*{box-sizing:border-box}body{margin:0}main{max-width:1100px;margin:auto;padding:36px 24px}header,.toolbar,.weekhead{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}.brand{font-weight:800;letter-spacing:-1px;font-size:25px}.tag{font-size:11px;letter-spacing:2px;color:#758477}button,input,select{font:inherit;border:1px solid #d2dbd0;border-radius:8px;background:white;padding:10px 13px;color:inherit}button{cursor:pointer}button:hover{background:#e8eee4}button.primary{background:#254f3e;color:white;border-color:#254f3e}h1{font-size:clamp(32px,5vw,52px);letter-spacing:-2px;margin:44px 0 12px}p{color:#6c7b70;line-height:1.6}.toolbar{margin:28px 0}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:24px 0 32px}.stat{background:#e6eddf;border-radius:14px;padding:22px}.stat strong{display:block;font-size:32px;margin-top:10px}.stat small{color:#607561}.week{background:white;border:1px solid #dce3d7;border-radius:14px;overflow:hidden;margin:18px 0}.weekhead{padding:20px 24px;border-bottom:1px solid #e5eae1}.weekhead h2{font-size:18px;margin:0}.weekhead span{font-size:13px;color:#72806e}.tablewrap{overflow:auto}table{border-collapse:collapse;width:100%;min-width:570px}th,td{text-align:left;padding:12px 24px;border-bottom:1px solid #eef0ea}th{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7d887a;background:#fafbf8}td:last-child,th:last-child{text-align:right}td select{width:160px;padding:8px}tr.today{background:#f0f5e9}tfoot td{font-weight:bold;background:#f5f8f0}.note{font-size:12px;margin-top:30px}.status{font-size:12px;color:#64735f}footer{margin:28px 0;display:flex;gap:10px;flex-wrap:wrap}#notice{padding:12px;background:#fff0d6;border-radius:8px;display:none}label{font-size:13px}.actions{display:flex;gap:8px;flex-wrap:wrap}@media(max-width:600px){main{padding:24px 16px}.stats{gap:8px}.stat{padding:15px 10px}.stat strong{font-size:24px}th,td{padding:12px 16px}.weekhead{padding:16px}h1{margin-top:32px}}
+</style>
+<main>
+<header>
+<div class="brand">
+<span class="brandmark">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<path d="M4 8h13v7a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8Zm13 1h2a3 3 0 0 1 0 6h-2M7 3v2m5-3v3M3 23h17"/>
+</svg>
+</span> Daily Pour <div class="tag">AFTERNOON BEVERAGE TRACKER</div>
+</div>
+<span class="status" id="status" role="status">Connect GitHub</span>
+</header>
+<section class="hero">
+<div>
+<div class="eyebrow">
+<span>
+</span> YOUR EVERYDAY, A LITTLE LIGHTER</div>
+<h1>Good sips.<br>
+<em>Simple sums.</em>
+</h1>
+<p>A little tea, a little coffee. One lovely place to keep track.<br>
+<span class="owner">Huzefa Singapore’s daily beverage journal · Monday–Saturday</span>
+</p>
+</div>
+<div class="hero-art" aria-hidden="true">
+<svg viewBox="0 0 360 290" fill="none">
+<circle cx="180" cy="150" r="112" fill="#e5ebd8"/>
+<ellipse cx="184" cy="247" rx="115" ry="12" fill="#cdd8bb"/>
+<path d="M246 130h24c37 0 37 58 0 58h-24" stroke="#304936" stroke-width="13"/>
+<path d="M96 121h158v66c0 41-31 60-79 60-48 0-79-19-79-60v-66Z" fill="#f9fcf2" stroke="#304936" stroke-width="3"/>
+<ellipse cx="175" cy="121" rx="79" ry="19" fill="#304936"/>
+<ellipse cx="175" cy="120" rx="66" ry="12" fill="#bd8964"/>
+<path d="M152 84c-24-23 24-30 0-54m43 54c-24-23 24-30 0-54" stroke="#879a72" stroke-width="4" stroke-linecap="round"/>
+<path d="m290 55 4 13 13 4-13 4-4 13-4-13-13-4 13-4 4-13Z" fill="#db874e"/>
+<path d="M56 167c-15-19-14-37 8-49 9 23 5 39-8 49Z" fill="#779065"/>
+<path d="M57 166c-8-12-14-19-24-25" stroke="#304936" stroke-width="2"/>
+<circle cx="278" cy="214" r="26" fill="#e7ad68"/>
+<path d="M278 194v40m-20-20h40m-34-14 28 28m0-28-28 28" stroke="#f9edce" stroke-width="2"/>
+<path d="M145 160c14 8 40 8 57 0" stroke="#c9d5b9" stroke-width="3" stroke-linecap="round"/>
+</svg>
+<span class="art-label">POUR. LOG. CARRY ON.</span>
+</div>
+</section>
+<div id="notice" role="alert">
+</div>
+<div class="toolbar">
+<label>
+<span class="field-label">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<rect x="3" y="5" width="18" height="16" rx="3"/>
+<path d="M7 3v4m10-4v4M3 11h18m-13 4h2m4 0h2"/>
+</svg> YOUR MONTH</span>
+<input type="month" id="month" value="2026-11">
+</label>
+<div class="actions">
+<button id="today">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<circle cx="12" cy="12" r="8"/>
+<path d="M12 1v4m0 14v4M1 12h4m14 0h4"/>
+<circle cx="12" cy="12" r="2"/>
+</svg>Go to today</button>
+<button class="primary" id="save">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<path d="m5 3 13 0 3 3v15H3V3h2Zm2 0v7h10V3M7 21v-7h10v7"/>
+</svg>Reload GitHub</button>
+</div>
+</div>
+<details class="tools" open>
+<summary>
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/>
+</svg> Backup & export <span>Keep a copy of your journal</span>
+</summary>
+<footer>
+<button id="backup">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/>
+</svg>Download backup</button>
+<button id="restore">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<path d="M4 9a8 8 0 1 1 0 7M4 3v6h6M12 8v5l3 2"/>
+</svg>Restore backup</button>
+<button id="csv">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<path d="M14 3H5v18h14V8l-5-5Zm0 0v5h5M8 13h8m-8 4h5"/>
+</svg>Export month as CSV</button>
+<button id="print">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<path d="M7 8V3h10v5M7 17H3V8h18v9h-4M7 14h10v7H7z"/>
+</svg>Print / save PDF</button>
+<input hidden type="file" id="file" accept="application/json,.json">
+</footer>
+</details>
+<details id="connection" class="tools" open><summary>Connect private GitHub repository</summary><div style="padding:0 18px 18px;display:flex;gap:12px;flex-wrap:wrap"><label>GitHub owner <input id="gh-owner" value="huzefas80" autocomplete="off" placeholder="Your GitHub username"></label><label>Private repository <input id="gh-repo" value="Daily-Tea-Tracker" autocomplete="off" placeholder="daily-pour-data"></label><label>Access token <input id="gh-token" type="password" autocomplete="off" placeholder="Enter only here"></label><button id="connect" class="primary">Connect & load</button><button id="disconnect">Disconnect</button><p style="width:100%;font-size:11px">Use an expiring fine-grained token restricted to this repository, Contents: read and write. The token stays in memory until reload or disconnect. Do not paste it in chat or commit it. Connect on each session; saved entries remain in GitHub.</p></div></details><div class="stats">
+<div class="stat">
+<div class="stat-icon">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<rect x="3" y="5" width="18" height="15" rx="3"/>
+<path d="M3 8h18m-5 4h5v5h-5zM6 5V3h11"/>
+</svg>
+</div>
+<small>MONTH TOTAL</small>
+<strong id="total">
+</strong>
+</div>
+<div class="stat">
+<div class="stat-icon">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<path d="M4 8h13v7a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8Zm13 1h2a3 3 0 0 1 0 6h-2M7 3v2m5-3v3M3 23h17"/>
+</svg>
+</div>
+<small>DRINKS LOGGED</small>
+<strong id="count">
+</strong>
+</div>
+<div class="stat">
+<div class="stat-icon">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<rect x="3" y="5" width="18" height="16" rx="3"/>
+<path d="M7 3v4m10-4v4M3 11h18m-13 4h2m4 0h2"/>
+</svg>
+</div>
+<small>WEEKLY TABLES</small>
+<strong id="weeks">
+</strong>
+</div>
+</div>
+<div id="content">
+</div>
+
+<p class="note">Tea ₹12 · Coffee ₹13 · Boost ₹13 · Lemon Tea ₹12 · None ₹0<br>Entries save to data/entries.json in your private GitHub repository. Internet and a connection are required. No token or entries are stored in browser storage. Download backups for an additional copy. Google Sheets is not synced.</p>
+</main>
+<script>'use strict';
+const rates={'None':0,'Tea':12,'Coffee':13,'Boost':13,'Lemon Tea':12};
+const $=id=>document.getElementById(id);let state={version:1,entries:{}},baseline={},sha=null,connected=false,busy=false,token='',owner='',repo='',branch='';
+function validate(x){if(!x||x.version!==1||!x.entries||typeof x.entries!=='object'||Array.isArray(x.entries))throw Error('Invalid backup');for(const [date,drink] of Object.entries(x.entries)){if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Object.hasOwn(rates,drink))throw Error('Invalid entry');const d=new Date(date+'T12:00:00Z');if(!Number.isFinite(+d)||d.toISOString().slice(0,10)!==date)throw Error('Invalid date');}return {version:1,entries:{...x.entries}};}
+function money(n){return new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:0}).format(n);}
+function localDate(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function render(){const month=$('month').value;if(!/^\d{4}-\d{2}$/.test(month))return;const [y,m]=month.split('-').map(Number),days=new Date(y,m,0).getDate();let total=0,count=0;const fragments=[];for(let start=1;start<=days;start+=7){let sum=0;const end=Math.min(start+6,days),rows=[];for(let day=start;day<=end;day++){if(new Date(y,m-1,day).getDay()===0)continue;const key=month+'-'+String(day).padStart(2,'0'),drink=state.entries[key]||'None',amount=rates[drink];sum+=amount;total+=amount;if(drink!=='None')count++;const dt=new Date(y,m-1,day);rows.push(`<tr class="${key===localDate()?'today':''}" id="day-${key}">
+<td>${dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})}<br>
+<small style="color:#87927e">${dt.toLocaleDateString('en-GB',{weekday:'long'})}</small>
+</td>
+<td class="person-col">Huzefa Singapore</td>
+<td>
+<select aria-label="Beverage for ${key}" data-date="${key}">${Object.keys(rates).map(name=>`<option ${drink===name?'selected':''}>${name}</option>`).join('')}</select>
+</td>
+<td>${money(amount)}</td>
+</tr>`);}fragments.push(`<section class="week">
+<div class="weekhead">
+<h2>
+<span class="week-num">0${Math.ceil(start/7)}</span> Week ${Math.ceil(start/7)}</h2>
+<span>${start}–${end} ${new Date(y,m-1,1).toLocaleDateString('en-GB',{month:'long',year:'numeric'})}</span>
+</div>
+<div class="tablewrap">
+<table>
+<thead>
+<tr>
+<th>Date</th>
+<th class="person-col">Name</th>
+<th>Beverage</th>
+<th>Amount</th>
+</tr>
+</thead>
+<tbody>${rows.join('')}</tbody>
+<tfoot>
+<tr>
+<td colspan="3">Weekly total</td>
+<td>${money(sum)}</td>
+</tr>
+</tfoot>
+</table>
+</div>
+</section>`);} $('content').innerHTML=fragments.join('');$('total').textContent=money(total);$('count').textContent=count;$('weeks').textContent=Math.ceil(days/7);}
+function download(name,text,type){const url=URL.createObjectURL(new Blob([text],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+
+function notify(text){$('status').textContent=text;}
+function fail(e){notify('Not synced');$('notice').textContent=e.message||String(e);$('notice').style.display='block';}
+function controls(){document.querySelectorAll('#content select').forEach(x=>x.disabled=!connected||busy);}
+function draw(){render();controls();}
+async function request(path,options={}){
+ const r=await fetch('https://api.github.com'+path,{...options,headers:{Accept:'application/vnd.github+json',Authorization:'Bearer '+token,'X-GitHub-Api-Version':'2022-11-28',...(options.body?{'Content-Type':'application/json'}:{})},cache:'no-store'});
+ if(!r.ok){const e=new Error(r.status===401?'GitHub token rejected.':r.status===404?'Repository or file not found. Check owner, repository and token access.':r.status===409||r.status===422?'Save conflict. Reload from GitHub and try again.':'GitHub request failed ('+r.status+').');e.status=r.status;throw e;}return r.json();
+}
+function root(){return '/repos/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo);}
+function filePath(){return root()+'/contents/data/entries.json';}
+function decode(content){return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(content.replace(/\s/g,'')),c=>c.charCodeAt(0))));}
+function encode(value){const bytes=new TextEncoder().encode(JSON.stringify(value,null,2));let str='';for(const b of bytes)str+=String.fromCharCode(b);return btoa(str);}
+async function readRemote(){const f=await request(filePath()+'?ref='+encodeURIComponent(branch));if(f.type!=='file'||f.encoding!=='base64'||!f.content)throw Error('Unexpected data file format.');return {state:validate(decode(f.content)),sha:f.sha};}
+async function connect(){if(busy)return;busy=true;connected=false;controls();token=$('gh-token').value.trim();owner=$('gh-owner').value.trim();repo=$('gh-repo').value.trim();if(!token||!owner||!repo){busy=false;fail(Error('Enter owner, repository and token.'));return;}
+ try{notify('Connecting…');const metadata=await request(root());if(metadata.private!==true)throw Error('Use a private data repository.');branch=metadata.default_branch;if(!branch)throw Error('Initialize your repository with a README first.');
+ let remote;try{remote=await readRemote();}catch(e){if(e.status!==404)throw e;if(!confirm('No data/entries.json exists. Create an empty journal in this private repository?'))throw Error('Initialization cancelled.');const result=await request(filePath(),{method:'PUT',body:JSON.stringify({message:'Initialize Daily Pour journal',branch,content:encode({version:1,entries:{}})})});remote={state:{version:1,entries:{}},sha:result.content.sha};}
+ state=remote.state;baseline={...state.entries};sha=remote.sha;connected=true;$('gh-token').value='';$('notice').style.display='none';notify('Connected · private GitHub repository');$('connection').open=false;
+ }catch(e){token='';fail(e);}finally{busy=false;draw();}}
+async function sync(next){if(!connected||busy)return;busy=true;controls();notify('Saving to GitHub…');try{
+ const remote=await readRemote();const merged={...remote.state.entries};for(const [date,drink] of Object.entries(next)){if(drink===(baseline[date]||'None'))continue;if((remote.state.entries[date]||'None')!==(baseline[date]||'None'))throw Error('Entry changed on another device: '+date+'. Reload GitHub before editing.');merged[date]=drink;}
+ const data={version:1,entries:merged};const result=await request(filePath(),{method:'PUT',body:JSON.stringify({message:'Update beverage journal',branch,sha:remote.sha,content:encode(data)})});state=data;baseline={...merged};sha=result.content.sha;$('notice').style.display='none';notify('Saved to GitHub');
+ }catch(e){fail(e);}finally{busy=false;draw();}}
+$('connect').onclick=connect;
+$('disconnect').onclick=()=>{if(busy)return;token='';sha=null;connected=false;state={version:1,entries:{}};baseline={};$('gh-token').value='';$('connection').open=true;notify('Disconnected');draw();};
+$('content').addEventListener('change',e=>{if(!e.target.matches('select[data-date]'))return;const next={...state.entries,[e.target.dataset.date]:e.target.value};sync(next);});
+$('save').onclick=async()=>{if(!connected){$('connection').open=true;return;}if(busy)return;busy=true;controls();try{const remote=await readRemote();state=remote.state;baseline={...state.entries};sha=remote.sha;notify('Reloaded from GitHub');$('notice').style.display='none';}catch(e){fail(e);}finally{busy=false;draw();}};
+$('month').onchange=draw;$('today').onclick=()=>{$('month').value=localDate().slice(0,7);draw();document.getElementById('day-'+localDate())?.scrollIntoView({behavior:'smooth',block:'center'});};
+$('backup').onclick=()=>{if(!connected||busy){fail(Error('Connect first to download a GitHub backup.'));return;}download('daily-pour-backup-'+localDate()+'.json',JSON.stringify(state,null,2),'application/json');};
+$('restore').onclick=()=>{if(!connected){$('connection').open=true;return;}$('file').click();};
+$('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const imported=validate(JSON.parse(await f.text()));if(confirm('Import this backup into your private repository? Matching dates will use backup values.'))await sync({...state.entries,...imported.entries});}catch(err){fail(err);}finally{e.target.value='';}};
+$('csv').onclick=()=>{const month=$('month').value,[y,m]=month.split('-').map(Number),days=new Date(y,m,0).getDate(),rows=['Date,Name,Beverage,Amount,Week'];for(let d=1;d<=days;d++){if(new Date(y,m-1,d).getDay()===0)continue;const date=month+'-'+String(d).padStart(2,'0'),drink=state.entries[date]||'None';rows.push(`${date},Huzefa Singapore,${drink},${rates[drink]},${Math.ceil(d/7)}`);}download('beverages-'+month+'.csv',rows.join('\r\n'),'text/csv');};$('print').onclick=()=>window.print();draw();notify('Connect GitHub to load your journal');
+</script>
+<style>@media print{header .status,.toolbar,footer,.note,#notice{display:none!important}body{background:white}main{padding:0}h1{font-size:28px;margin:15px 0}.week{break-inside:avoid}.stats{margin:12px 0}td,th{padding:6px 12px}select{border:0;appearance:none}p{margin:5px 0}}</style>
+<style>
+:root{font-family:Inter,"Segoe UI",Arial,sans-serif;background:#f8f8f2;color:#293d30}body{background:radial-gradient(ellipse at 90% 0%,#eaf0df80,transparent 55%)}main{max-width:1030px;padding:32px 30px 40px}header{padding-bottom:24px;border-bottom:1px solid #dfe5d7}.brand{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:23px;letter-spacing:-.8px}.brand .tag{display:none}.brandmark{display:grid;place-items:center;background:#2f4936;color:#e8edce;border-radius:12px;width:40px;height:40px}.icon{width:19px;height:19px;flex-shrink:0;vertical-align:middle}.status{background:#eaf0e0;padding:9px 13px;border-radius:30px;font-size:11px}.status:before{content:"";display:inline-block;width:6px;height:6px;background:#6b8a4c;border-radius:50%;margin-right:7px}.hero{display:grid;grid-template-columns:1.3fr 1fr;align-items:center;padding:32px 0 16px}.eyebrow{font-size:10px;letter-spacing:2px;font-weight:650;display:flex;gap:8px;align-items:center}.eyebrow span{width:6px;height:6px;background:#db874e;border-radius:50%}h1{font-family:Georgia,serif;font-weight:400;font-size:70px;line-height:1.02;letter-spacing:-3px;margin:22px 0}h1 em{color:#778d5f;font-weight:400}.hero p{font-size:13px;line-height:1.8}.owner{font-size:11px;color:#8d9684}.hero-art{position:relative;max-width:340px;margin:auto}.hero-art svg{width:100%;display:block}.art-label{display:block;text-align:center;font-size:9px;letter-spacing:3px;color:#81906e;margin-top:-10px}.toolbar{border-top:1px solid #e0e5d8;padding-top:25px;margin:20px 0}label{display:flex;align-items:center;gap:13px}.field-label{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:650;letter-spacing:1px;color:#73806a}input,select,button{border:1px solid #dfe5d7;background:#fff;border-radius:10px;font-size:12px;transition:background .15s,box-shadow .15s}button{display:inline-flex;align-items:center;gap:8px;padding:11px 15px}button:hover{background:#eff3e8;box-shadow:0 3px 10px #243c3010}button.primary{background:#304d39;border-color:#304d39}button.primary:hover{background:#426248}button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #b5c996;outline-offset:3px}.stats{gap:12px;margin:22px 0 32px}.stat{background:#eef1e6;border:1px solid #e1e7d7;border-radius:16px;padding:23px;position:relative}.stat:first-child{background:#e3ebd5}.stat small{font-size:10px;letter-spacing:1.1px}.stat strong{font-family:Georgia,serif;font-size:36px;font-weight:400;letter-spacing:-1px;margin-top:13px}.stat-icon{position:absolute;right:20px;top:20px;color:#73865f}.stat-icon .icon{width:22px;height:22px}.week{border-radius:16px;border-color:#e0e6d8;margin:20px 0;box-shadow:0 3px 16px #293d3003}.weekhead{padding:18px 24px}.weekhead h2{display:flex;align-items:center;gap:12px;font-size:14px;font-weight:600}.week-num{display:grid;place-items:center;width:31px;height:31px;border-radius:50%;background:#edf1e5;color:#798c65;font-size:11px;font-weight:500}.weekhead>span{font-size:11px;color:#8a9481}th{font-size:9px;letter-spacing:1.3px;background:#fbfcf8;padding-top:11px;padding-bottom:11px}td{font-size:12px;padding-top:11px;padding-bottom:11px}td:first-child{font-weight:600}td small{font-size:10px;font-weight:400}.person-col{color:#8a9481;font-size:11px}td select{background:#f8faf4;border-color:#e6ebdf;width:150px;font-size:12px;border-radius:8px;padding:8px 10px}td:last-child{font-variant-numeric:tabular-nums;font-weight:600;color:#536949}tr.today{background:#f0f5e5}tr.today td:first-child{border-left:3px solid #88a165}tfoot td{background:#f7f9f2;padding-top:14px;padding-bottom:14px;font-size:11px}tfoot td:last-child{font-size:14px;color:#304d39}.tools{margin:28px 0 14px;border:1px solid #e0e6d8;border-radius:12px;background:#f4f6ee}.tools summary{cursor:pointer;list-style:none;padding:18px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:10px}.tools summary::-webkit-details-marker{display:none}.tools summary:after{content:'+';margin-left:auto;font-size:18px;font-weight:400}.tools[open] summary:after{content:'−'}.tools summary span{font-size:11px;color:#909a86;font-weight:400}.tools footer{padding:0 18px 18px;margin:0;gap:8px}.note{font-size:10px;line-height:1.8;color:#919a89;margin-top:18px}.tablewrap{scrollbar-width:thin}table{min-width:540px}
+@media(max-width:650px){main{padding:22px 16px}.hero{grid-template-columns:1.5fr 1fr;padding-top:28px}h1{font-size:47px;letter-spacing:-2px}.hero-art{min-width:120px}.hero p{font-size:11px}.eyebrow{font-size:8px;letter-spacing:1px}.art-label{font-size:7px;letter-spacing:1px}.owner{font-size:10px}.hero p br{display:none}.stat{padding:16px 12px}.stat strong{font-size:29px}.stat small{font-size:8px;letter-spacing:.5px}.stat-icon{position:static;margin-bottom:9px}.stat-icon .icon{width:18px;height:18px}.toolbar{gap:15px}label{flex-wrap:wrap;gap:8px}.field-label{font-size:9px}.tools summary span{display:none}.person-col{display:none}table{min-width:340px}td,th{padding-left:14px;padding-right:14px}td select{width:135px}.weekhead{padding:15px}.weekhead>span{font-size:10px}.status{font-size:9px;padding:8px}.brand{font-size:20px}.brandmark{width:34px;height:34px}}
+@media print{.hero-art,.tools,.eyebrow,.art-label{display:none}.hero{display:block}h1{font-size:32px}.stat{padding:12px}.week{box-shadow:none}.person-col{display:table-cell}.hero{padding:10px 0}.weekhead{padding:8px 12px}td,th{padding:5px 12px}.stat-icon{display:none}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style>
+</html>
