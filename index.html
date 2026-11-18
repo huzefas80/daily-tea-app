@@ -98,7 +98,7 @@
 <input hidden type="file" id="file" accept="application/json,.json">
 </footer>
 </details>
-<details id="connection" class="tools" open><summary>Connect private GitHub repository</summary><div style="padding:0 18px 18px;display:flex;gap:12px;flex-wrap:wrap"><label>GitHub owner <input id="gh-owner" value="huzefas80" autocomplete="off" placeholder="Your GitHub username"></label><label>Private repository <input id="gh-repo" value="Daily-Tea-Tracker" autocomplete="off" placeholder="daily-pour-data"></label><label>Access token <input id="gh-token" type="password" autocomplete="off" placeholder="Enter only here"></label><button id="connect" class="primary">Connect & load</button><button id="disconnect">Disconnect</button><p style="width:100%;font-size:11px">Use an expiring fine-grained token restricted to this repository, Contents: read and write. The token stays in memory until reload or disconnect. Do not paste it in chat or commit it. Connect on each session; saved entries remain in GitHub.</p></div></details><div class="stats">
+<details id="connection" class="tools" open><summary>Connect private GitHub repository</summary><div style="padding:0 18px 18px;display:flex;gap:12px;flex-wrap:wrap"><label>GitHub owner <input id="gh-owner" value="huzefas80" autocomplete="off" placeholder="Your GitHub username"></label><label>Private repository <input id="gh-repo" value="Daily-Tea-Tracker" autocomplete="off" placeholder="daily-pour-data"></label><label>Access token <input id="gh-token" type="password" autocomplete="off" placeholder="Enter only here"></label><label style="width:100%;font-size:12px"><input id="remember-connection" type="checkbox" checked> Remember this connection for 30 days on this device</label><button id="connect" class="primary">Connect & load</button><button id="disconnect">Disconnect</button><p style="width:100%;font-size:11px">Use an expiring fine-grained token restricted to this repository, Contents: read and write. When Remember is enabled, your token is saved in this browser for 30 days. Use this on your own device. Disconnect removes the saved connection. Do not paste your token in chat or commit it. Your records stay in the private repository.</p></div></details><div class="stats">
 <div class="stat">
 <div class="stat-icon">
 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -135,7 +135,7 @@
 <div id="content">
 </div>
 
-<p class="note">Price per cup: Tea ₹12 · Coffee ₹13 · Boost ₹13 · Lemon Tea ₹12 · None ₹0<br>Entries save to data/entries.json in your private GitHub repository. Internet and a connection are required. No token or entries are stored in browser storage. Download backups for an additional copy. Google Sheets is not synced.</p>
+<p class="note">Price per cup: Tea ₹12 · Coffee ₹13 · Boost ₹13 · Lemon Tea ₹12 · None ₹0<br>Entries save to data/entries.json in your private GitHub repository. Internet and a connection are required. Only the remembered connection is stored in this browser for up to 30 days; entries stay in GitHub. Clearing site data removes the saved connection, not your records. Download backups for an additional copy. Google Sheets is not synced.</p>
 </main>
 <script>'use strict';
 const rates={'None':0,'Tea':12,'Coffee':13,'Boost':13,'Lemon Tea':12};
@@ -193,6 +193,31 @@ function render(){const month=$('month').value;if(!/^\d{4}-\d{2}$/.test(month))r
 </section>`);} $('content').innerHTML=fragments.join('');$('total').textContent=money(total);$('count').textContent=count;$('weeks').textContent=Math.ceil(days/7);}
 function download(name,text,type){const url=URL.createObjectURL(new Blob([text],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 
+
+const CONNECTION_KEY='daily-pour-github-connection-v1',REMEMBER_MS=30*24*60*60*1000;
+function forgetConnection(){try{localStorage.removeItem(CONNECTION_KEY);}catch(e){}}
+function readConnection(){
+ try{
+  const raw=localStorage.getItem(CONNECTION_KEY);if(!raw)return null;
+  const c=JSON.parse(raw);
+  if(!c||typeof c.owner!=='string'||!c.owner.trim()||typeof c.repo!=='string'||!c.repo.trim()||typeof c.token!=='string'||!c.token.trim()||!Number.isFinite(c.expiresAt)||c.expiresAt<=Date.now()||c.expiresAt>Date.now()+REMEMBER_MS+60000){forgetConnection();return null;}
+  return c;
+ }catch(e){forgetConnection();return null;}
+}
+function rememberConnection(automatic){
+ if(!$('remember-connection').checked){forgetConnection();return;}
+ try{
+  const old=automatic?readConnection():null;
+  const expiresAt=old&&old.owner===owner&&old.repo===repo&&old.token===token?old.expiresAt:Date.now()+REMEMBER_MS;
+  localStorage.setItem(CONNECTION_KEY,JSON.stringify({owner,repo,token,expiresAt}));
+ }catch(e){$('notice').textContent='Connected, but this browser could not remember the connection. You will need to reconnect after reload.';$('notice').style.display='block';}
+}
+function restoreConnection(){
+ const c=readConnection();if(!c){notify('Connect GitHub to load your journal');return Promise.resolve();}
+ $('gh-owner').value=c.owner;$('gh-repo').value=c.repo;$('gh-token').value=c.token;$('remember-connection').checked=true;
+ return connect(true);
+}
+
 function notify(text){$('status').textContent=text;}
 function fail(e){notify('Not synced');$('notice').textContent=e.message||String(e);$('notice').style.display='block';}
 function controls(){document.querySelectorAll('#content select').forEach(x=>x.disabled=!connected||busy);document.querySelectorAll('#content input[data-quantity-date]').forEach(x=>x.disabled=!connected||busy||(state.entries[x.dataset.quantityDate]||'None')==='None');}
@@ -206,11 +231,11 @@ function filePath(){return root()+'/contents/data/entries.json';}
 function decode(content){return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(content.replace(/\s/g,'')),c=>c.charCodeAt(0))));}
 function encode(value){const bytes=new TextEncoder().encode(JSON.stringify(value,null,2));let str='';for(const b of bytes)str+=String.fromCharCode(b);return btoa(str);}
 async function readRemote(){const f=await request(filePath()+'?ref='+encodeURIComponent(branch));if(f.type!=='file'||f.encoding!=='base64'||!f.content)throw Error('Unexpected data file format.');return {state:validate(decode(f.content)),sha:f.sha};}
-async function connect(){if(busy)return;busy=true;connected=false;controls();token=$('gh-token').value.trim();owner=$('gh-owner').value.trim();repo=$('gh-repo').value.trim();if(!token||!owner||!repo){busy=false;fail(Error('Enter owner, repository and token.'));return;}
+async function connect(automatic=false){if(busy)return;busy=true;connected=false;controls();token=$('gh-token').value.trim();owner=$('gh-owner').value.trim();repo=$('gh-repo').value.trim();if(!token||!owner||!repo){busy=false;fail(Error('Enter owner, repository and token.'));return;}
  try{notify('Connecting…');const metadata=await request(root());if(metadata.private!==true)throw Error('Use a private data repository.');branch=metadata.default_branch;if(!branch)throw Error('Initialize your repository with a README first.');
  let remote;try{remote=await readRemote();}catch(e){if(e.status!==404)throw e;if(!confirm('No data/entries.json exists. Create an empty journal in this private repository?'))throw Error('Initialization cancelled.');const result=await request(filePath(),{method:'PUT',body:JSON.stringify({message:'Initialize Daily Pour journal',branch,content:encode({version:1,entries:{}})})});remote={state:{version:1,entries:{}},sha:result.content.sha};}
- state=remote.state;baseline={...state.entries};baselineQuantities={...state.quantities};sha=remote.sha;connected=true;$('gh-token').value='';$('notice').style.display='none';notify('Connected · private GitHub repository');$('connection').open=false;
- }catch(e){token='';fail(e);}finally{busy=false;draw();}}
+ state=remote.state;baseline={...state.entries};baselineQuantities={...state.quantities};sha=remote.sha;connected=true;$('gh-token').value='';$('notice').style.display='none';notify('Connected · private GitHub repository');rememberConnection(automatic===true);$('connection').open=false;
+ }catch(e){if(e.status===401||e.status===403)forgetConnection();token='';$('gh-token').value='';$('connection').open=true;fail(e);}finally{busy=false;draw();}}
 async function sync(next,nextQuantities={...state.quantities}){
  if(!connected||busy)return;busy=true;controls();notify('Saving to GitHub…');
  try{
@@ -227,8 +252,8 @@ async function sync(next,nextQuantities={...state.quantities}){
   state=data;baseline={...data.entries};baselineQuantities={...data.quantities};sha=result.content.sha;$('notice').style.display='none';notify('Saved to GitHub');
  }catch(e){fail(e);}finally{busy=false;draw();}
 }
-$('connect').onclick=connect;
-$('disconnect').onclick=()=>{if(busy)return;token='';sha=null;connected=false;state={version:1,entries:{}};baseline={};baselineQuantities={};$('gh-token').value='';$('connection').open=true;notify('Disconnected');draw();};
+$('connect').onclick=()=>connect(false);$('remember-connection').onchange=()=>{if(!$('remember-connection').checked)forgetConnection();};
+$('disconnect').onclick=()=>{if(busy)return;forgetConnection();token='';sha=null;connected=false;state={version:1,entries:{}};baseline={};baselineQuantities={};$('gh-token').value='';$('connection').open=true;notify('Disconnected');draw();};
 $('content').addEventListener('change',e=>{
  const drinkSelect=e.target.matches('select[data-date]'),quantityInput=e.target.matches('input[data-quantity-date]');
  if(!drinkSelect&&!quantityInput)return;
@@ -243,7 +268,7 @@ $('month').onchange=draw;$('today').onclick=()=>{$('month').value=localDate().sl
 $('backup').onclick=()=>{if(!connected||busy){fail(Error('Connect first to download a GitHub backup.'));return;}download('daily-pour-backup-'+localDate()+'.json',JSON.stringify(state,null,2),'application/json');};
 $('restore').onclick=()=>{if(!connected){$('connection').open=true;return;}$('file').click();};
 $('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const imported=validate(JSON.parse(await f.text()));if(confirm('Import this backup into your private repository? Matching dates will use backup values.'))await sync({...state.entries,...imported.entries},{...state.quantities,...Object.fromEntries(Object.keys(imported.entries).map(date=>[date,quantity(imported,date)]))});}catch(err){fail(err);}finally{e.target.value='';}};
-$('csv').onclick=()=>{if(!connected||busy){fail(Error('Connect first to export your records.'));return;}const month=$('month').value,[y,m]=month.split('-').map(Number),days=new Date(y,m,0).getDate(),rows=['Date,Name,Beverage,Quantity,Unit price,Amount,Week'];for(let d=1;d<=days;d++){if(new Date(y,m-1,d).getDay()===0)continue;const date=month+'-'+String(d).padStart(2,'0'),drink=state.entries[date]||'None';rows.push(`${date},Huzefa Singapore,${drink},${quantity(state,date)},${rates[drink]},${rates[drink]*quantity(state,date)},${Math.ceil(d/7)}`);}download('beverages-'+month+'.csv',rows.join('\r\n'),'text/csv');};$('print').onclick=()=>window.print();draw();notify('Connect GitHub to load your journal');
+$('csv').onclick=()=>{if(!connected||busy){fail(Error('Connect first to export your records.'));return;}const month=$('month').value,[y,m]=month.split('-').map(Number),days=new Date(y,m,0).getDate(),rows=['Date,Name,Beverage,Quantity,Unit price,Amount,Week'];for(let d=1;d<=days;d++){if(new Date(y,m-1,d).getDay()===0)continue;const date=month+'-'+String(d).padStart(2,'0'),drink=state.entries[date]||'None';rows.push(`${date},Huzefa Singapore,${drink},${quantity(state,date)},${rates[drink]},${rates[drink]*quantity(state,date)},${Math.ceil(d/7)}`);}download('beverages-'+month+'.csv',rows.join('\r\n'),'text/csv');};$('print').onclick=()=>window.print();draw();restoreConnection();
 </script>
 <style>@media print{header .status,.toolbar,footer,.note,#notice{display:none!important}body{background:white}main{padding:0}h1{font-size:28px;margin:15px 0}.week{break-inside:avoid}.stats{margin:12px 0}td,th{padding:6px 12px}select{border:0;appearance:none}p{margin:5px 0}}</style>
 <style>
@@ -253,4 +278,5 @@ $('csv').onclick=()=>{if(!connected||busy){fail(Error('Connect first to export y
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 </style>
 <style>.quantity-input{width:75px;padding:8px;text-align:center;font-variant-numeric:tabular-nums}input:disabled{opacity:.5}table{min-width:620px}@media(max-width:650px){table{min-width:470px}.quantity-input{width:60px}tfoot td[colspan]{text-align:left}}@media print{.quantity-input{border:0;width:45px;padding:0}}</style></html>
+
 
