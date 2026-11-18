@@ -116,7 +116,7 @@
 <path d="M4 8h13v7a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8Zm13 1h2a3 3 0 0 1 0 6h-2M7 3v2m5-3v3M3 23h17"/>
 </svg>
 </div>
-<small>DRINKS LOGGED</small>
+<small>CUPS ORDERED</small>
 <strong id="count">
 </strong>
 </div>
@@ -135,15 +135,26 @@
 <div id="content">
 </div>
 
-<p class="note">Tea ₹12 · Coffee ₹13 · Boost ₹13 · Lemon Tea ₹12 · None ₹0<br>Entries save to data/entries.json in your private GitHub repository. Internet and a connection are required. No token or entries are stored in browser storage. Download backups for an additional copy. Google Sheets is not synced.</p>
+<p class="note">Price per cup: Tea ₹12 · Coffee ₹13 · Boost ₹13 · Lemon Tea ₹12 · None ₹0<br>Entries save to data/entries.json in your private GitHub repository. Internet and a connection are required. No token or entries are stored in browser storage. Download backups for an additional copy. Google Sheets is not synced.</p>
 </main>
 <script>'use strict';
 const rates={'None':0,'Tea':12,'Coffee':13,'Boost':13,'Lemon Tea':12};
-const $=id=>document.getElementById(id);let state={version:1,entries:{}},baseline={},sha=null,connected=false,busy=false,token='',owner='',repo='',branch='';
-function validate(x){if(!x||x.version!==1||!x.entries||typeof x.entries!=='object'||Array.isArray(x.entries))throw Error('Invalid backup');for(const [date,drink] of Object.entries(x.entries)){if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Object.hasOwn(rates,drink))throw Error('Invalid entry');const d=new Date(date+'T12:00:00Z');if(!Number.isFinite(+d)||d.toISOString().slice(0,10)!==date)throw Error('Invalid date');}return {version:1,entries:{...x.entries}};}
+const $=id=>document.getElementById(id);let state={version:1,entries:{}},baseline={},baselineQuantities={},sha=null,connected=false,busy=false,token='',owner='',repo='',branch='';
+function quantity(data,date){const drink=data.entries[date]||'None';return drink==='None'?0:(data.quantities?.[date]??1);}
+function validate(x){
+ if(!x||x.version!==1||!x.entries||typeof x.entries!=='object'||Array.isArray(x.entries))throw Error('Invalid backup');
+ const quantities=x.quantities??{};if(typeof quantities!=='object'||quantities===null||Array.isArray(quantities))throw Error('Invalid quantities');
+ for(const [date,drink] of Object.entries(x.entries)){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Object.hasOwn(rates,drink))throw Error('Invalid entry');
+  const d=new Date(date+'T12:00:00Z');if(!Number.isFinite(+d)||d.toISOString().slice(0,10)!==date)throw Error('Invalid date');
+  if(Object.hasOwn(quantities,date)){const n=quantities[date];if(!Number.isInteger(n)||n<0||n>999||(drink==='None'?n!==0:n<1))throw Error('Invalid quantity for '+date);}
+ }
+ for(const date of Object.keys(quantities))if(!Object.hasOwn(x.entries,date))throw Error('Quantity without a drink');
+ return {...x,version:1,entries:{...x.entries},quantities:{...quantities}};
+}
 function money(n){return new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:0}).format(n);}
 function localDate(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
-function render(){const month=$('month').value;if(!/^\d{4}-\d{2}$/.test(month))return;const [y,m]=month.split('-').map(Number),days=new Date(y,m,0).getDate();let total=0,count=0;const fragments=[];for(let start=1;start<=days;start+=7){let sum=0;const end=Math.min(start+6,days),rows=[];for(let day=start;day<=end;day++){if(new Date(y,m-1,day).getDay()===0)continue;const key=month+'-'+String(day).padStart(2,'0'),drink=state.entries[key]||'None',amount=rates[drink];sum+=amount;total+=amount;if(drink!=='None')count++;const dt=new Date(y,m-1,day);rows.push(`<tr class="${key===localDate()?'today':''}" id="day-${key}">
+function render(){const month=$('month').value;if(!/^\d{4}-\d{2}$/.test(month))return;const [y,m]=month.split('-').map(Number),days=new Date(y,m,0).getDate();let total=0,count=0;const fragments=[];for(let start=1;start<=days;start+=7){let sum=0;const end=Math.min(start+6,days),rows=[];for(let day=start;day<=end;day++){if(new Date(y,m-1,day).getDay()===0)continue;const key=month+'-'+String(day).padStart(2,'0'),drink=state.entries[key]||'None',qty=quantity(state,key),amount=rates[drink]*qty;sum+=amount;total+=amount;count+=qty;const dt=new Date(y,m-1,day);rows.push(`<tr class="${key===localDate()?'today':''}" id="day-${key}">
 <td>${dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})}<br>
 <small style="color:#87927e">${dt.toLocaleDateString('en-GB',{weekday:'long'})}</small>
 </td>
@@ -151,6 +162,7 @@ function render(){const month=$('month').value;if(!/^\d{4}-\d{2}$/.test(month))r
 <td>
 <select aria-label="Beverage for ${key}" data-date="${key}">${Object.keys(rates).map(name=>`<option ${drink===name?'selected':''}>${name}</option>`).join('')}</select>
 </td>
+<td><input class="quantity-input" type="number" inputmode="numeric" min="${drink==='None'?0:1}" max="999" step="1" value="${qty}" data-quantity-date="${key}" aria-label="Quantity for ${key}" ${drink==='None'?'disabled':''}></td>
 <td>${money(amount)}</td>
 </tr>`);}fragments.push(`<section class="week">
 <div class="weekhead">
@@ -165,13 +177,14 @@ function render(){const month=$('month').value;if(!/^\d{4}-\d{2}$/.test(month))r
 <th>Date</th>
 <th class="person-col">Name</th>
 <th>Beverage</th>
+<th>Quantity</th>
 <th>Amount</th>
 </tr>
 </thead>
 <tbody>${rows.join('')}</tbody>
 <tfoot>
 <tr>
-<td colspan="3">Weekly total</td>
+<td colspan="4">Weekly total</td>
 <td>${money(sum)}</td>
 </tr>
 </tfoot>
@@ -182,7 +195,7 @@ function download(name,text,type){const url=URL.createObjectURL(new Blob([text],
 
 function notify(text){$('status').textContent=text;}
 function fail(e){notify('Not synced');$('notice').textContent=e.message||String(e);$('notice').style.display='block';}
-function controls(){document.querySelectorAll('#content select').forEach(x=>x.disabled=!connected||busy);}
+function controls(){document.querySelectorAll('#content select').forEach(x=>x.disabled=!connected||busy);document.querySelectorAll('#content input[data-quantity-date]').forEach(x=>x.disabled=!connected||busy||(state.entries[x.dataset.quantityDate]||'None')==='None');}
 function draw(){render();controls();}
 async function request(path,options={}){
  const r=await fetch('https://api.github.com'+path,{...options,headers:{Accept:'application/vnd.github+json',Authorization:'Bearer '+token,'X-GitHub-Api-Version':'2022-11-28',...(options.body?{'Content-Type':'application/json'}:{})},cache:'no-store'});
@@ -196,21 +209,41 @@ async function readRemote(){const f=await request(filePath()+'?ref='+encodeURICo
 async function connect(){if(busy)return;busy=true;connected=false;controls();token=$('gh-token').value.trim();owner=$('gh-owner').value.trim();repo=$('gh-repo').value.trim();if(!token||!owner||!repo){busy=false;fail(Error('Enter owner, repository and token.'));return;}
  try{notify('Connecting…');const metadata=await request(root());if(metadata.private!==true)throw Error('Use a private data repository.');branch=metadata.default_branch;if(!branch)throw Error('Initialize your repository with a README first.');
  let remote;try{remote=await readRemote();}catch(e){if(e.status!==404)throw e;if(!confirm('No data/entries.json exists. Create an empty journal in this private repository?'))throw Error('Initialization cancelled.');const result=await request(filePath(),{method:'PUT',body:JSON.stringify({message:'Initialize Daily Pour journal',branch,content:encode({version:1,entries:{}})})});remote={state:{version:1,entries:{}},sha:result.content.sha};}
- state=remote.state;baseline={...state.entries};sha=remote.sha;connected=true;$('gh-token').value='';$('notice').style.display='none';notify('Connected · private GitHub repository');$('connection').open=false;
+ state=remote.state;baseline={...state.entries};baselineQuantities={...state.quantities};sha=remote.sha;connected=true;$('gh-token').value='';$('notice').style.display='none';notify('Connected · private GitHub repository');$('connection').open=false;
  }catch(e){token='';fail(e);}finally{busy=false;draw();}}
-async function sync(next){if(!connected||busy)return;busy=true;controls();notify('Saving to GitHub…');try{
- const remote=await readRemote();const merged={...remote.state.entries};for(const [date,drink] of Object.entries(next)){if(drink===(baseline[date]||'None'))continue;if((remote.state.entries[date]||'None')!==(baseline[date]||'None'))throw Error('Entry changed on another device: '+date+'. Reload GitHub before editing.');merged[date]=drink;}
- const data={version:1,entries:merged};const result=await request(filePath(),{method:'PUT',body:JSON.stringify({message:'Update beverage journal',branch,sha:remote.sha,content:encode(data)})});state=data;baseline={...merged};sha=result.content.sha;$('notice').style.display='none';notify('Saved to GitHub');
- }catch(e){fail(e);}finally{busy=false;draw();}}
+async function sync(next,nextQuantities={...state.quantities}){
+ if(!connected||busy)return;busy=true;controls();notify('Saving to GitHub…');
+ try{
+  const draft=validate({version:1,entries:next,quantities:nextQuantities});
+  const remote=await readRemote();const merged={...remote.state.entries},quantities={...remote.state.quantities};
+  for(const [date,drink] of Object.entries(draft.entries)){
+   const newQty=quantity(draft,date),baseQty=quantity({entries:baseline,quantities:baselineQuantities},date);
+   if(drink===(baseline[date]||'None')&&newQty===baseQty)continue;
+   if((remote.state.entries[date]||'None')!==(baseline[date]||'None')||quantity(remote.state,date)!==baseQty)throw Error('Entry changed on another device: '+date+'. Reload GitHub before editing.');
+   merged[date]=drink;quantities[date]=newQty;
+  }
+  const data=validate({...remote.state,version:1,entries:merged,quantities});
+  const result=await request(filePath(),{method:'PUT',body:JSON.stringify({message:'Update beverage journal and quantities',branch,sha:remote.sha,content:encode(data)})});
+  state=data;baseline={...data.entries};baselineQuantities={...data.quantities};sha=result.content.sha;$('notice').style.display='none';notify('Saved to GitHub');
+ }catch(e){fail(e);}finally{busy=false;draw();}
+}
 $('connect').onclick=connect;
-$('disconnect').onclick=()=>{if(busy)return;token='';sha=null;connected=false;state={version:1,entries:{}};baseline={};$('gh-token').value='';$('connection').open=true;notify('Disconnected');draw();};
-$('content').addEventListener('change',e=>{if(!e.target.matches('select[data-date]'))return;const next={...state.entries,[e.target.dataset.date]:e.target.value};sync(next);});
-$('save').onclick=async()=>{if(!connected){$('connection').open=true;return;}if(busy)return;busy=true;controls();try{const remote=await readRemote();state=remote.state;baseline={...state.entries};sha=remote.sha;notify('Reloaded from GitHub');$('notice').style.display='none';}catch(e){fail(e);}finally{busy=false;draw();}};
+$('disconnect').onclick=()=>{if(busy)return;token='';sha=null;connected=false;state={version:1,entries:{}};baseline={};baselineQuantities={};$('gh-token').value='';$('connection').open=true;notify('Disconnected');draw();};
+$('content').addEventListener('change',e=>{
+ const drinkSelect=e.target.matches('select[data-date]'),quantityInput=e.target.matches('input[data-quantity-date]');
+ if(!drinkSelect&&!quantityInput)return;
+ const date=drinkSelect?e.target.dataset.date:e.target.dataset.quantityDate;
+ const next={...state.entries},quantities={...state.quantities};
+ if(drinkSelect){next[date]=e.target.value;quantities[date]=next[date]==='None'?0:Math.max(1,quantity(state,date));}
+ else {const n=Number(e.target.value);if(e.target.value===''||!Number.isInteger(n)||n<1||n>999){fail(Error('Enter a whole number from 1 to 999. Choose None for no drink.'));draw();return;}quantities[date]=n;}
+ sync(next,quantities);
+});
+$('save').onclick=async()=>{if(!connected){$('connection').open=true;return;}if(busy)return;busy=true;controls();try{const remote=await readRemote();state=remote.state;baseline={...state.entries};baselineQuantities={...state.quantities};sha=remote.sha;notify('Reloaded from GitHub');$('notice').style.display='none';}catch(e){fail(e);}finally{busy=false;draw();}};
 $('month').onchange=draw;$('today').onclick=()=>{$('month').value=localDate().slice(0,7);draw();document.getElementById('day-'+localDate())?.scrollIntoView({behavior:'smooth',block:'center'});};
 $('backup').onclick=()=>{if(!connected||busy){fail(Error('Connect first to download a GitHub backup.'));return;}download('daily-pour-backup-'+localDate()+'.json',JSON.stringify(state,null,2),'application/json');};
 $('restore').onclick=()=>{if(!connected){$('connection').open=true;return;}$('file').click();};
-$('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const imported=validate(JSON.parse(await f.text()));if(confirm('Import this backup into your private repository? Matching dates will use backup values.'))await sync({...state.entries,...imported.entries});}catch(err){fail(err);}finally{e.target.value='';}};
-$('csv').onclick=()=>{const month=$('month').value,[y,m]=month.split('-').map(Number),days=new Date(y,m,0).getDate(),rows=['Date,Name,Beverage,Amount,Week'];for(let d=1;d<=days;d++){if(new Date(y,m-1,d).getDay()===0)continue;const date=month+'-'+String(d).padStart(2,'0'),drink=state.entries[date]||'None';rows.push(`${date},Huzefa Singapore,${drink},${rates[drink]},${Math.ceil(d/7)}`);}download('beverages-'+month+'.csv',rows.join('\r\n'),'text/csv');};$('print').onclick=()=>window.print();draw();notify('Connect GitHub to load your journal');
+$('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const imported=validate(JSON.parse(await f.text()));if(confirm('Import this backup into your private repository? Matching dates will use backup values.'))await sync({...state.entries,...imported.entries},{...state.quantities,...Object.fromEntries(Object.keys(imported.entries).map(date=>[date,quantity(imported,date)]))});}catch(err){fail(err);}finally{e.target.value='';}};
+$('csv').onclick=()=>{if(!connected||busy){fail(Error('Connect first to export your records.'));return;}const month=$('month').value,[y,m]=month.split('-').map(Number),days=new Date(y,m,0).getDate(),rows=['Date,Name,Beverage,Quantity,Unit price,Amount,Week'];for(let d=1;d<=days;d++){if(new Date(y,m-1,d).getDay()===0)continue;const date=month+'-'+String(d).padStart(2,'0'),drink=state.entries[date]||'None';rows.push(`${date},Huzefa Singapore,${drink},${quantity(state,date)},${rates[drink]},${rates[drink]*quantity(state,date)},${Math.ceil(d/7)}`);}download('beverages-'+month+'.csv',rows.join('\r\n'),'text/csv');};$('print').onclick=()=>window.print();draw();notify('Connect GitHub to load your journal');
 </script>
 <style>@media print{header .status,.toolbar,footer,.note,#notice{display:none!important}body{background:white}main{padding:0}h1{font-size:28px;margin:15px 0}.week{break-inside:avoid}.stats{margin:12px 0}td,th{padding:6px 12px}select{border:0;appearance:none}p{margin:5px 0}}</style>
 <style>
@@ -219,4 +252,5 @@ $('csv').onclick=()=>{const month=$('month').value,[y,m]=month.split('-').map(Nu
 @media print{.hero-art,.tools,.eyebrow,.art-label{display:none}.hero{display:block}h1{font-size:32px}.stat{padding:12px}.week{box-shadow:none}.person-col{display:table-cell}.hero{padding:10px 0}.weekhead{padding:8px 12px}td,th{padding:5px 12px}.stat-icon{display:none}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 </style>
-</html>
+<style>.quantity-input{width:75px;padding:8px;text-align:center;font-variant-numeric:tabular-nums}input:disabled{opacity:.5}table{min-width:620px}@media(max-width:650px){table{min-width:470px}.quantity-input{width:60px}tfoot td[colspan]{text-align:left}}@media print{.quantity-input{border:0;width:45px;padding:0}}</style></html>
+
